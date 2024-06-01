@@ -35,7 +35,6 @@ int init(ArenaAllocator* allocator, ServerState* state) {
     }
 
     std::cout << "Server initialized" << std::endl;
-
     return 0;
 }
 
@@ -57,7 +56,7 @@ int update(ArenaAllocator* allocator, ServerState* state) {
         "Content-Type: text/html\r\n"
         "Content-Length: 13\r\n"
         "\r\n"
-        "Hello, HI!";
+        "Hello, world!";
 
     write(client_socket, http_response, strlen(http_response));
     close(client_socket);

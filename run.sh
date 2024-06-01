@@ -51,7 +51,4 @@ fi
 
 # Run the hot reload watcher
 echo "Running the hot reload watcher..."
-./build/hotreload &
-
-# Inform user that the server library is ready to be reloaded
-echo "Server library is built and ready for hot reload."
+./build/hotreload

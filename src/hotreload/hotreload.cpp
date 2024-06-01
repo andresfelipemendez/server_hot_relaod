@@ -3,14 +3,29 @@
 #include <chrono>
 #include <thread>
 #include <dlfcn.h>
+#include <signal.h>
+#include <condition_variable>
+#include <mutex>
 #include "arena_allocator.h"
-#include "../server/server.cpp"
+#include "../server/server.h" // Assuming this header includes the ServerState definition
 
 namespace fs = std::filesystem;
 
 typedef int (*FnInit)(ArenaAllocator*, ServerState*);
 typedef int (*FnUpdate)(ArenaAllocator*, ServerState*);
 typedef void (*FnShutdown)(ArenaAllocator*, ServerState*);
+
+std::condition_variable cv;
+std::mutex cv_m;
+bool reload_signal = false;
+
+void handle_signal(int sig) {
+    if (sig == SIGUSR1) {
+        std::unique_lock<std::mutex> lk(cv_m);
+        reload_signal = true;
+        cv.notify_all();
+    }
+}
 
 void watch_and_reload(const std::string& dll_path, const std::string& copy_path, ArenaAllocator* allocator, ServerState* state) {
     auto last_write_time = fs::last_write_time(dll_path);
@@ -47,40 +62,46 @@ void watch_and_reload(const std::string& dll_path, const std::string& copy_path,
     // Initial load
     if (!load_library()) {
         return;
-    }else{
+    } else{
         // Initialize the new DLL
-        if (init(allocator,state) != 0) {
+        if (init(allocator, state) != 0) {
             std::cerr << "Initialization failed" << std::endl;
             dlclose(engineLibrary);
             return;
         }
+
     }
 
     while (true) {
-        // Check if the DLL has been updated
-        auto current_write_time = fs::last_write_time(dll_path);
-        if (current_write_time != last_write_time) {
-            std::cout << "DLL updated. Reloading..." << std::endl;
-            last_write_time = current_write_time;
+        // Wait for signal
+        std::unique_lock<std::mutex> lk(cv_m);
+        cv.wait(lk, []{ return reload_signal; });
 
-            if (engineLibrary) {
-                dlclose(engineLibrary);
+        if (reload_signal) {
+            reload_signal = false;
+
+            // Check if the DLL has been updated
+            auto current_write_time = fs::last_write_time(dll_path);
+            if (current_write_time != last_write_time) {
+                std::cout << "DLL updated. Reloading..." << std::endl;
+                last_write_time = current_write_time;
+
+                if (engineLibrary) {
+                    dlclose(engineLibrary);
+                }
+
+                // Load the new DLL
+                if (!load_library()) {
+                    break;
+                }
             }
 
-            // Load the new DLL
-            if (!load_library()) {
+            // Call the update function
+            if (update && update(allocator, state) != 0) {
+                std::cerr << "Update failed" << std::endl;
                 break;
             }
         }
-
-        // Call the update function
-        if (update && update(allocator, state) != 0) {
-            std::cerr << "Update failed" << std::endl;
-            break;
-        }
-
-        // Sleep for a while before checking again
-        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     // Clean up before exiting
@@ -103,9 +124,24 @@ int main() {
 
     // Create an arena allocator
     ArenaAllocator allocator(1024 * 1024); // 1 MB arena
-    ServerState state = {};
+    ServerState* state = new ServerState();
 
-    watch_and_reload(dll_path, copy_path, &allocator, &state);
+    // Write PID to a file
+    FILE *pid_file = fopen("/tmp/hotreload.pid", "w");
+    if (pid_file) {
+        fprintf(pid_file, "%d\n", getpid());
+        fclose(pid_file);
+    } else {
+        perror("Error opening PID file for writing");
+        return 1;
+    }
+
+    // Set up signal handling
+    signal(SIGUSR1, handle_signal);
+
+    printf("Hotreload process running with PID: %d\n", getpid());
+
+    watch_and_reload(dll_path, copy_path, &allocator, state);
 
     return 0;
 }
