@@ -4,7 +4,7 @@
 #include <thread>
 #include <dlfcn.h>
 #include "arena_allocator.h"
-#include "../src/server.h"
+#include "../server/server.cpp"
 
 namespace fs = std::filesystem;
 
@@ -93,8 +93,8 @@ void watch_and_reload(const std::string& dll_path, const std::string& copy_path,
 }
 
 int main() {
-    std::string dll_path = "../lib/enginelib.so";
-    std::string copy_path = "../lib/enginelib_copy.so";
+    std::string dll_path = "./build/server_lib.so";
+    std::string copy_path = "./build/server_lib_copy.so";
 
     if (!fs::exists(dll_path)) {
         std::cerr << "Original shared library not found: " << dll_path << '\n';

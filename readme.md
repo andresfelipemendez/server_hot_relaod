@@ -2,6 +2,8 @@
 
 This project is a simple web server with hot-reload capabilities, implemented in C++. The server can dynamically reload its shared library (`.so` file) without restarting, preserving its state using an arena allocator.
 
+runs on ubuntu, inotify tools
+
 ## Features
 
 - **Hot Reloading**: Automatically reloads the shared library when changes are detected.
@@ -18,13 +20,15 @@ This project is a simple web server with hot-reload capabilities, implemented in
 │ └── build_lib.sh
 ├── hotreload
 │ ├── arena_allocator.h
-│ ├── hotreload.cpp
+│ └── hotreload.cpp
 ├── lib
 ├── run.sh
 └── src
 ├── server.cpp
 └── server.h
 ```
+
+
 
 ## Getting Started
 
