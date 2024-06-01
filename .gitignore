@@ -1,0 +1,23 @@
+# Compiled source files
+*.o
+*.so
+
+# Directories
+/build/
+/lib/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+*.swp
+*.bak
+*.pid
+
+# IDE-specific files
+.vscode/
+.idea/
+*.iml
