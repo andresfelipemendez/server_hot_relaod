@@ -8,7 +8,7 @@ cd "$SCRIPT_DIR"
 mkdir -p ../build
 
 # Compile the tests
-g++ -std=c++17 -I../lib/catch2 ../lib/catch2/catch_amalgamated.cpp ../tests/tests.cpp -o ../build/tests
+g++ -std=c++17 ../tests/tests.cpp -o ../build/tests
 
 if [ $? -eq 0 ]; then
 	echo "Tests build successful."

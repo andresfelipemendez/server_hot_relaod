@@ -21,8 +21,32 @@ check_inotify_tools() {
 	fi
 }
 
+# Function to check if build-essential is installed
+check_build_essential() {
+    if ! dpkg -s build-essential &>/dev/null; then
+        echo "build-essential is not installed."
+        read -p "Do you want to install build-essential? (y/n) " choice
+        case "$choice" in
+        y | Y)
+            echo "Installing build-essential..."
+            sudo apt-get update
+            sudo apt-get install -y build-essential
+            ;;
+        *)
+            echo "build-essential is required to run this script. Exiting."
+            exit 1
+            ;;
+        esac
+    else
+        echo "build-essential is already installed."
+    fi
+}
+
 # Check and install inotify-tools if necessary
 check_inotify_tools
+
+# Check and install build-essential if necessary
+check_build_essential
 
 # Call the build_watcher.sh script
 ./buildscripts/build_watcher.sh
